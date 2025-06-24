@@ -1,17 +1,19 @@
-//C++ CODE
+//O Código abaixo é referente a biblioteca Dabble, usada para realizar a movimentação do carro
+
+#C++ CODE
 
 #define pin1 13
 #define pin2 12
 #define pin3 14
 #define pin4 27
 
-//#define CUSTOM_SETTINGS
-//#define INCLUDE_GAMEPAD_MODULE
-
+#define CUSTOM_SETTINGS
+#define INCLUDE_GAMEPAD_MODULE
 #include <DabbleESP32.h>
+
 void setup() {
   
-  Serial.begin(115200);      
+  Serial.begin(115200);       
   Dabble.begin("Penelope");       
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
@@ -21,7 +23,8 @@ void setup() {
 }
 
 void loop() {
-  Dabble.processInput();             
+
+  Dabble.processInput();            
   Serial.print("KeyPressed: ");
   if (GamePad.isUpPressed())
   {
@@ -99,10 +102,134 @@ void loop() {
     stop();
   }
 }
+
 void stop(){
+
   Serial.println("Stopedd");
  digitalWrite(pin1, LOW);
  digitalWrite(pin2, LOW);
  digitalWrite(pin3, LOW);
- digitalWrite(pin4, LOW);
+ digitalWrite(pin4, LOW);
+}
+
+
+
+
+
+
+
+
+//O código abaixo é referente ao sensor de ré do carro 
+
+#include <LiquidCrystal.h>
+
+
+// LCD: RS, E, D4, D5, D6, D7
+LiquidCrystal lcd(14, 27, 26, 25, 33, 32);
+
+
+#define TRIG_PIN 5
+#define ECHO_PIN 18
+#define BUZZER_PIN 19
+
+
+const int NUM_READINGS = 5;
+const int READING_DELAY_MS = 10;
+const long ULTRASOUND_TIMEOUT_US = 30000;
+
+
+void setup() {
+  Serial.begin(115200);
+
+
+  pinMode(TRIG_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, LOW);
+
+
+  lcd.begin(16, 2);
+  lcd.print(" Sensor de Re ");
+  delay(1500);
+  lcd.clear();
+}
+
+
+void loop() {
+  long sumDuration = 0;
+  int validReadings = 0;
+
+
+  for (int i = 0; i < NUM_READINGS; i++) {
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+
+
+    long currentDuration = pulseIn(ECHO_PIN, HIGH, ULTRASOUND_TIMEOUT_US);
+
+
+    if (currentDuration > 0) {
+      sumDuration += currentDuration;
+      validReadings++;
+    }
+
+
+    delay(READING_DELAY_MS);
+  }
+
+
+  long averagedDuration = (validReadings > 0) ? (sumDuration / validReadings) : 0;
+  float distance = (averagedDuration > 0) ? (averagedDuration * 0.0343) / 2.0 : -1;
+
+
+  // Atualiza LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Distancia:");
+
+
+  lcd.setCursor(0, 1);
+  if (distance < 0) {
+    lcd.print("Sem leitura   ");
+  } else {
+    lcd.print(distance, 1);
+    lcd.print(" cm           ");
+  }
+
+
+  // Lógica do buzzer
+  int beepDelay;
+  const int BEEP_DURATION_MS = 30;
+
+
+  if (distance < 0) {
+
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(200);
+    return;
+  } else if (distance < 10) {
+    beepDelay = 50;
+  } else if (distance < 20) {
+    beepDelay = 150;
+  } else if (distance < 35) {
+    beepDelay = 300;
+  } else if (distance < 50) {
+    beepDelay = 500;
+  } else {
+    beepDelay = 0;
+  }
+
+
+  if (beepDelay > 0) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(BEEP_DURATION_MS);
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(beepDelay);
+  } else {
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(200);
+  }
 }
